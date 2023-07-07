@@ -4,7 +4,6 @@
  * Made compatible with Thyme v1.7.2
  */
 var net = require('net');
-var ip = require('ip');
 var moment = require('moment');
 var fs = require('fs');
 const {exec} = require('child_process');
@@ -151,110 +150,6 @@ function sendDroneMessage(type, params) {
 
 var dji = {};
 var params = {};
-
-function dji_handler(data) {
-    socket_mav = this;
-
-    var data_arr = data.toString().split(',');
-
-    dji.flightstatus = data_arr[0].replace('[', '');
-    dji.timestamp = data_arr[1].slice(1, data_arr[1].length);
-    dji.lat = data_arr[2];
-    dji.lon = data_arr[3];
-    dji.alt = data_arr[4];
-    dji.relative_alt = data_arr[5];
-    dji.roll = data_arr[6];
-    dji.pitch = data_arr[7];
-    dji.yaw = data_arr[8];
-    dji.vx = data_arr[9];
-    dji.vy = data_arr[10];
-    dji.vz = data_arr[11];
-    dji.bat_percentage = data_arr[12];
-    dji.bat_voltage = data_arr[13];
-    dji.bat_current = data_arr[14];
-    dji.bat_capacity = data_arr[15].replace(']', '');
-
-    // Debug
-    var debug_string = dji.lat + ', ' + dji.lon + ', ' + dji.alt + ', ' + dji.relative_alt;
-    mqtt_client.publish(my_parent_cnt_name + '/Debug', debug_string);
-
-    // #0 PING
-    params.time_usec = dji.timestamp;
-    params.seq = 0;
-    params.target_system = 0;
-    params.target_component = 0;
-    setTimeout(sendDroneMessage, 1, mavlink.MAVLINK_MSG_ID_PING, params);
-
-    // #1 HEARTBEAT
-    params.type = 2;
-    params.autopilot = 3;
-
-    if (dji.flightstatus == '0') {
-        params.base_mode = 81;
-    } else {
-        params.base_mode = (81 | 0x80);
-    }
-
-    params.system_status = 4;
-    params.mavlink_version = 3;
-    setTimeout(sendDroneMessage, 1, mavlink.MAVLINK_MSG_ID_HEARTBEAT, params);
-
-    // #2 MAVLINK_MSG_ID_GPS_RAW_INT
-    params.time_usec = dji.timestamp;
-    params.fix_type = 3;
-    params.lat = parseFloat(dji.lat) * 1E7;
-    params.lon = parseFloat(dji.lon) * 1E7;
-    params.alt = parseFloat(dji.alt) * 1000;
-    params.eph = 175;
-    params.epv = 270;
-    params.vel = 7;
-    params.cog = 0;
-    params.satellites_visible = 7;
-    params.alt_ellipsoid = 0;
-    params.h_acc = 0;
-    params.v_acc = 0;
-    params.vel_acc = 0;
-    params.hdg_acc = 0;
-    setTimeout(sendDroneMessage, 1, mavlink.MAVLINK_MSG_ID_GPS_RAW_INT, params);
-
-    // #3 MAVLINK_MSG_ID_ATTITUDE
-    params.time_boot_ms = dji.timestamp;
-    params.roll = dji.roll;
-    params.pitch = dji.pitch;
-    params.yaw = dji.yaw;
-    params.rollspeed = -0.00011268721573287621;
-    params.pitchspeed = 0.0000612109579378739;
-    params.yawspeed = -0.00031687552109360695;
-    setTimeout(sendDroneMessage, 1, mavlink.MAVLINK_MSG_ID_ATTITUDE, params);
-
-    // #4 MAVLINK_MSG_ID_GLOBAL_POSITION_INT
-    params.time_boot_ms = dji.timestamp;
-    params.lat = parseFloat(dji.lat) * 1E7;
-    params.lon = parseFloat(dji.lon) * 1E7;
-    params.alt = parseFloat(dji.alt) * 1000;
-    params.relative_alt = parseFloat(dji.relative_alt) * 1000;
-    params.vx = parseFloat(dji.vx) * 100;
-    params.vy = parseFloat(dji.vy) * 100;
-    params.vz = parseFloat(dji.vz) * 100;
-    params.hdg = 0;
-    setTimeout(sendDroneMessage, 1, mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, params);
-
-    // #5 MAVLINK_SYS_STATUS(#1)
-    params.onboard_control_sensors_present = mavlink.MAV_SYS_STATUS_SENSOR_3D_GYRO & mavlink.MAV_SYS_STATUS_SENSOR_GPS;
-    params.onboard_control_sensors_enabled = mavlink.MAV_SYS_STATUS_SENSOR_3D_GYRO & mavlink.MAV_SYS_STATUS_SENSOR_GPS;
-    params.onboard_control_sensors_health = mavlink.MAV_SYS_STATUS_SENSOR_3D_GYRO & mavlink.MAV_SYS_STATUS_SENSOR_GPS;
-    params.load = 500;
-    params.voltage_battery = dji.bat_voltage;
-    params.current_battery = dji.bat_current;
-    params.battery_remaining = dji.bat_percentage;
-    params.drop_rate_comm = 8;
-    params.errors_comm = 0;
-    params.errors_count1 = 0;
-    params.errors_count2 = 0;
-    params.errors_count3 = 0;
-    params.errors_count4 = 0;
-    setTimeout(sendDroneMessage, 1, mavlink.MAVLINK_MSG_ID_SYS_STATUS, params);
-}
 
 var SerialPort = require('serialport');
 
@@ -562,9 +457,6 @@ function parseMavFromDrone(mavPacket) {
         console.log('[parseMavFromDrone Error]', e);
     }
 }
-
-
-
 
 
 /* USER CODE */
